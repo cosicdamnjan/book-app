@@ -22,6 +22,8 @@ import java.util.Objects;
 public class BookService {
 
     public static final String CREATED_DATE = "createdDate";
+    // No book found with the ID:
+    public static final String NO_BOOK_FOUND = "No book found with the ID: ";
 
     private final BookRepository bookRepository;
     private final BookTransactionHistoryRepository transactionHistoryRepository;
@@ -37,7 +39,7 @@ public class BookService {
     public BookResponse findById(Integer bookId) {
         return bookRepository.findById(bookId)
                 .map(bookMapper::toBookResponse)
-                .orElseThrow(() -> new EntityNotFoundException("No book found with the ID: " + bookId));
+                .orElseThrow(() -> new EntityNotFoundException(NO_BOOK_FOUND + bookId));
     }
 
     public PageResponse<BookResponse> findAllBooks(int page, int size, Authentication connectedUser) {
@@ -115,12 +117,24 @@ public class BookService {
 
     public Integer updateShareableStatus(Integer bookId, Authentication connectedUser) {
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new EntityNotFoundException("No book found with the ID: " + bookId));
+                .orElseThrow(() -> new EntityNotFoundException(NO_BOOK_FOUND + bookId));
         User user = ((User) connectedUser.getPrincipal());
         if (!Objects.equals(book.getOwner().getId(), user.getId())) {
-            throw new OperationNotPermittedException("You cannot update books shareable status");
+            throw new OperationNotPermittedException("You cannot update others books shareable status");
         }
         book.setShareable(!book.isShareable());
+        bookRepository.save(book);
+        return bookId;
+    }
+
+    public Integer updateArchivedStatus(Integer bookId, Authentication connectedUser) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException(NO_BOOK_FOUND + bookId));
+        User user = ((User) connectedUser.getPrincipal());
+        if (!Objects.equals(book.getOwner().getId(), user.getId())) {
+            throw new OperationNotPermittedException("You cannot update others books archived status");
+        }
+        book.setShareable(!book.isArchived());
         bookRepository.save(book);
         return bookId;
     }
