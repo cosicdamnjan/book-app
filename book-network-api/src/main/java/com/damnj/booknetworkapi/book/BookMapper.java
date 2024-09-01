@@ -43,4 +43,16 @@ public class BookMapper {
                 .returnApproved(history.isReturnApproved())
                 .build();
     }
+
+    public ReturnedBookResponse toReturnedBookResponse(BookTransactionHistory history) {
+        return ReturnedBookResponse.builder()
+                .id(history.getBook().getId())
+                .title(history.getBook().getTitle())
+                .authorName(history.getBook().getAuthorName())
+                .isbn(history.getBook().getIsbn())
+                .rate(history.getBook().getRate())
+                .returned(history.isReturned())
+                .returnApproved(history.isReturnApproved())
+                .build();
+    }
 }

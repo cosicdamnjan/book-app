@@ -1,6 +1,7 @@
 package com.damnj.booknetworkapi.book;
 
 import com.damnj.booknetworkapi.common.PageResponse;
+import com.damnj.booknetworkapi.exception.OperationNotPermittedException;
 import com.damnj.booknetworkapi.history.BookTransactionHistory;
 import com.damnj.booknetworkapi.history.BookTransactionHistoryRepository;
 import com.damnj.booknetworkapi.user.User;
@@ -14,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -91,5 +93,35 @@ public class BookService {
                 allBorrowedBooks.isFirst(),
                 allBorrowedBooks.isLast()
         );
+    }
+
+    public PageResponse<ReturnedBookResponse> findAllReturnedBooks(int page, int size, Authentication connectedUser) {
+        User user = ((User) connectedUser.getPrincipal());
+        Pageable pageable = PageRequest.of(page, size, Sort.by(CREATED_DATE).descending());
+        Page<BookTransactionHistory> allReturnedBooks = transactionHistoryRepository.findAllReturnedBooks(pageable, user.getId());
+        List<ReturnedBookResponse> bookResponse = allReturnedBooks.stream()
+                .map(bookMapper::toReturnedBookResponse)
+                .toList();
+        return new PageResponse<>(
+                bookResponse,
+                allReturnedBooks.getNumber(),
+                allReturnedBooks.getSize(),
+                allReturnedBooks.getTotalElements(),
+                allReturnedBooks.getTotalPages(),
+                allReturnedBooks.isFirst(),
+                allReturnedBooks.isLast()
+        );
+    }
+
+    public Integer updateShareableStatus(Integer bookId, Authentication connectedUser) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException("No book found with the ID: " + bookId));
+        User user = ((User) connectedUser.getPrincipal());
+        if (!Objects.equals(book.getOwner().getId(), user.getId())) {
+            throw new OperationNotPermittedException("You cannot update books shareable status");
+        }
+        book.setShareable(!book.isShareable());
+        bookRepository.save(book);
+        return bookId;
     }
 }
