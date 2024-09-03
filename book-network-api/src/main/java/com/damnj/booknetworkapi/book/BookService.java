@@ -22,7 +22,6 @@ import java.util.Objects;
 public class BookService {
 
     public static final String CREATED_DATE = "createdDate";
-    // No book found with the ID:
     public static final String NO_BOOK_FOUND = "No book found with the ID: ";
 
     private final BookRepository bookRepository;
@@ -137,5 +136,30 @@ public class BookService {
         book.setShareable(!book.isArchived());
         bookRepository.save(book);
         return bookId;
+    }
+
+    public Integer borrowBook(Integer bookId, Authentication connectedUser) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException(NO_BOOK_FOUND + bookId));
+
+        if (book.isArchived() || !book.isShareable()) {
+            throw new OperationNotPermittedException("The requested book cannot be borrowed.");
+        }
+        User user = ((User) connectedUser.getPrincipal());
+        if (Objects.equals(book.getOwner().getId(), user.getId())) {
+            throw new OperationNotPermittedException("You cannot borrow your own book.");
+        }
+        final boolean isAlreadyBorrowed = transactionHistoryRepository.isAlreadyBorrowedByUser(bookId, user.getId());
+        if (isAlreadyBorrowed) {
+            throw new OperationNotPermittedException("The requested book is already borrowed.");
+        }
+        BookTransactionHistory bookTransactionHistory = BookTransactionHistory.builder()
+                .user(user)
+                .book(book)
+                .returned(false)
+                .returnApproved(false)
+                .build();
+
+        return transactionHistoryRepository.save(bookTransactionHistory).getId();
     }
 }
