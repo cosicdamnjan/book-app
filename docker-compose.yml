@@ -3,8 +3,8 @@ services:
     container_name: postgres-sql-bsn
     image: postgres
     environment:
-      POSTGRES_USER: username
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
       PGDATA: /var/lib/postgresql/data
       POSTGRES_DB: book_social_network
     volumes:
