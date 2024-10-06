@@ -1,7 +1,11 @@
 package com.damnj.booknetworkapi.feedback;
 
 import com.damnj.booknetworkapi.book.Book;
+import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
+@Service
 public class FeedbackMapper {
     public Feedback toFeedback(FeedbackRequest request) {
         return Feedback.builder()
@@ -10,6 +14,14 @@ public class FeedbackMapper {
                 .book(Book.builder()
                         .id(request.bookId())
                         .build())
+                .build();
+    }
+
+    public FeedbackResponse toFeedbackResponse(Feedback feedback, Integer id) {
+        return FeedbackResponse.builder()
+                .note(feedback.getNote())
+                .comment(feedback.getComment())
+                .ownFeedback(Objects.equals(feedback.getCreatedBy(), id))
                 .build();
     }
 }
